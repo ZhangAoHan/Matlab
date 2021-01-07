@@ -1,0 +1,110 @@
+%% Matlab神经网络43个案例分析
+
+% 动态神经网络时间序列预测研究-基于MATLAB的NARX实现
+% by 王小川(@王小川_matlab)
+% http://www.matlabsky.com
+% Email:sina363@163.com
+% http://weibo.com/hgsz2003
+
+%% 清空环境变量
+clear all
+close all
+clc
+load 'F:\工程文件\Matlab\论文及代码\马晓\程序 基于变分模态分解和神经网络的混沌时间序列预测研究_马骁\3.VMD-ELM\华山降水分析\EMD-ELM\data.mat'
+%% 加载数据
+% load ph_dataset %是个函数
+% inputSeries = phInputs;
+% targetSeries = phTargets;
+
+inputSeries=num2cell(data(1:end-1)');
+targetSeries=num2cell(data(2:end)');
+
+%% 建立非线性自回归模型
+inputDelays = 1:2;
+feedbackDelays = 1:2;
+hiddenLayerSize = 10;
+net = narxnet(inputDelays,feedbackDelays,hiddenLayerSize);
+
+
+%% 网络数据预处理函数定义
+net.inputs{1}.processFcns = {'removeconstantrows','mapminmax'};%默认值
+net.inputs{2}.processFcns = {'removeconstantrows','mapminmax'};%默认值
+
+%% 时间序列数据准备工作
+%NARX开环网络：[Xs,Xi,Ai,Ts] = preparets(net,X,{},T);（此次使用的是开环网络）
+%NARX闭环网络：
+% net = closeloop(net);
+% view(net)
+% [Xs,Xi,Ai] = preparets(net,X,{},T);
+[inputs,inputStates,layerStates,targets] = preparets(net,inputSeries,{},targetSeries);
+
+%% 训练数据、验证数据、测试数据划分
+net.divideFcn = 'dividerand';  
+net.divideMode = 'value';  %默认值为time
+net.divideParam.trainRatio = 80/100;
+net.divideParam.valRatio = 10/100;
+net.divideParam.testRatio = 10/100;
+
+%% 网络训练函数设定
+net.trainFcn = 'trainlm';  % Levenberg-Marquardt%默认值L-M算法（可更改）
+
+%% 误差函数设定
+net.performFcn = 'mse';  % Mean squared error%默认值
+
+%% 绘图函数设定
+net.plotFcns = {'plotperform','plottrainstate','plotresponse', ...
+  'ploterrcorr', 'plotinerrcorr'};
+
+%% 网络训练
+ 
+[net,tr] = train(net,inputs,targets,inputStates,layerStates);
+
+%% 网络测试
+outputs = net(inputs,inputStates,layerStates);
+errors = gsubtract(targets,outputs);%gsubtract：广义减法 求误差
+performance = perform(net,targets,outputs);%perform：计算网络性能
+
+%% 计算训练集、验证集、测试集误差
+trainTargets = gmultiply(targets,tr.trainMask);
+valTargets = gmultiply(targets,tr.valMask);
+testTargets = gmultiply(targets,tr.testMask);
+trainPerformance = perform(net,trainTargets,outputs)
+valPerformance = perform(net,valTargets,outputs)
+testPerformance = perform(net,testTargets,outputs)
+
+%% 网络训练效果可视化
+
+% figure, plotperform(tr)
+%plotperform模拟
+% figure
+% Train_error=tr.perf;
+% Validation_error=tr.vperf;
+% Test_error=tr.tperf;
+% plot(tr.epoch,log10(Train_error),"Color",'r',"LineWidth",2);
+% hold on
+% plot(tr.epoch,log10(Validation_error),"Color",'b',"LineWidth",2);
+% hold on
+% plot(tr.epoch,log10(Test_error),"Color",'k',"LineWidth",2);
+% legend("Train_error","Validation_error","Test_error");
+
+%  figure, plottrainstate(tr)
+% figure, plotregression(targets,outputs)
+% figure, plotresponse(targets,outputs)
+% figure, ploterrcorr(errors)
+% figure, plotinerrcorr(inputs,errors) 
+
+
+% %% close loop模式的实现
+% % 更改NARX神经网络模式
+% narx_net_closed = closeloop(net);
+% view(net)
+% view(narx_net_closed)
+% 
+% % 计算1500-2000个点的拟合效果
+% phInputs_c=phInputs(1500:2000);
+% PhTargets_c=phTargets(1500:2000);
+% 
+% [p1,Pi1,Ai1,t1] = preparets(narx_net_closed,phInputs_c,{},PhTargets_c);
+% % 网络仿真
+% yp1 = narx_net_closed(p1,Pi1,Ai1);
+% plot([cell2mat(yp1)' cell2mat(t1)'])
