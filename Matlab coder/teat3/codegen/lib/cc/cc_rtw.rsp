@@ -1,0 +1,3 @@
+cc.obj
+cc_initialize.obj
+cc_terminate.obj
