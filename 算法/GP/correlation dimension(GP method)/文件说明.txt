@@ -1,0 +1,19 @@
+G-P算法计算关联维的 Matlab 程序(mex版)
+
+-----------------------------------
+文件说明：
+1、GP_Algorithm_main.m - 程序主文件 
+2、LorenzData.dll - 产生Lorenz离散数据
+3、normalize_1.m - 数据归一化
+4、correlation_interal.c - 计算关联积分的源代码文件
+5. correlation_interal.dll-计算关联积分的mex文件
+
+没有采用短暂分离的方法，该软件的C语言源文件使用的是路振波提供的
+关联积分算法，在此说明和表示感谢！
+
+mex文件为matlab7.0版本，使用VC6.0的c语言编译器编译。
+
+大家手头有没有关联维线性化特征很好的实际时间序列，有的话不妨发给我试试。
+
+许小可 （yangfanboy）于大连海事大学
+2006年11月29日
